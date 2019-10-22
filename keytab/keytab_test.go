@@ -14,7 +14,7 @@ import (
 func TestUnmarshal(t *testing.T) {
 	t.Parallel()
 	b, _ := hex.DecodeString(testdata.TESTUSER1_KEYTAB)
-	kt := New()
+	kt := New().(*KeytabImpl)
 	err := kt.Unmarshal(b)
 	if err != nil {
 		t.Fatalf("Error parsing keytab data: %v\n", err)
@@ -64,9 +64,10 @@ func TestLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not load keytab: %v", err)
 	}
-	assert.Equal(t, uint8(2), kt.version, "keytab version not as expected")
-	assert.Equal(t, 12, len(kt.Entries), "keytab entry count not as expected: %+v", *kt)
-	for _, e := range kt.Entries {
+	kti := kt.(*KeytabImpl)
+	assert.Equal(t, uint8(2), kti.version, "keytab version not as expected")
+	assert.Equal(t, 12, len(kti.Entries), "keytab entry count not as expected: %+v", *kti)
+	for _, e := range kti.Entries {
 		if e.Principal.Realm != "TEST.GOKRB5" {
 			t.Error("principal realm not as expected")
 		}
