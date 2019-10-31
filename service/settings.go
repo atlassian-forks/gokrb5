@@ -10,7 +10,7 @@ import (
 
 // Settings defines service side configuration settings.
 type Settings struct {
-	Keytab             *keytab.Keytab
+	Keytab             keytab.Keytab
 	ktprinc            *types.PrincipalName
 	sname              string
 	requireHostAddr    bool
@@ -21,7 +21,7 @@ type Settings struct {
 }
 
 // NewSettings creates a new service Settings.
-func NewSettings(kt *keytab.Keytab, settings ...func(*Settings)) *Settings {
+func NewSettings(kt keytab.Keytab, settings ...func(*Settings)) *Settings {
 	s := new(Settings)
 	s.Keytab = kt
 	for _, set := range settings {

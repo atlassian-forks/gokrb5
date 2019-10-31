@@ -31,7 +31,7 @@ func SPNEGOClient(cl *client.Client, spn string) *SPNEGO {
 }
 
 // SPNEGOService configures the SPNEGO mechanism suitable for service side use.
-func SPNEGOService(kt *keytab.Keytab, options ...func(*service.Settings)) *SPNEGO {
+func SPNEGOService(kt keytab.Keytab, options ...func(*service.Settings)) *SPNEGO {
 	s := new(SPNEGO)
 	s.serviceSettings = service.NewSettings(kt, options...)
 	return s
