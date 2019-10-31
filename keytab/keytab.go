@@ -50,7 +50,7 @@ type principal struct {
 }
 
 // New creates new, empty Keytab type.
-func New() Keytab {
+func New() *KeytabImpl {
 	var e []entry
 	return &KeytabImpl{
 		version: 0,
