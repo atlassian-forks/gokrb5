@@ -114,7 +114,7 @@ func newPrincipal() principal {
 }
 
 // Load a Keytab file into a Keytab type.
-func Load(ktPath string) (Keytab, error) {
+func Load(ktPath string) (*KeytabImpl, error) {
 	kt := new(KeytabImpl)
 	b, err := ioutil.ReadFile(ktPath)
 	if err != nil {
