@@ -50,7 +50,7 @@ type principal struct {
 }
 
 // New creates new, empty Keytab type.
-func New() *KeytabImpl {
+func New() Keytab {
 	var e []entry
 	return &KeytabImpl{
 		version: 0,
@@ -114,7 +114,7 @@ func newPrincipal() principal {
 }
 
 // Load a Keytab file into a Keytab type.
-func Load(ktPath string) (*KeytabImpl, error) {
+func Load(ktPath string) (Keytab, error) {
 	kt := new(KeytabImpl)
 	b, err := ioutil.ReadFile(ktPath)
 	if err != nil {
