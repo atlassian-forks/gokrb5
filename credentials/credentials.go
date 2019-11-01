@@ -102,7 +102,7 @@ func (c *Credentials) Keytab() keytab.Keytab {
 
 // HasKeytab queries if the Credentials has a keytab defined.
 func (c *Credentials) HasKeytab() bool {
-	return c.keytab.IsPopulated()
+	return c.keytab != nil && c.keytab.IsPopulated()
 }
 
 // WithPassword sets the password in the Credentials struct.
