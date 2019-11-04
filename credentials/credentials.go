@@ -23,7 +23,7 @@ type Credentials struct {
 	displayName string
 	realm       string
 	cname       types.PrincipalName
-	keytab      *keytab.Keytab
+	keytab      keytab.Keytab
 	password    string
 	attributes  map[string]interface{}
 	validUntil  time.Time
@@ -89,23 +89,20 @@ func NewFromPrincipalName(cname types.PrincipalName, realm string) *Credentials 
 }
 
 // WithKeytab sets the Keytab in the Credentials struct.
-func (c *Credentials) WithKeytab(kt *keytab.Keytab) *Credentials {
+func (c *Credentials) WithKeytab(kt keytab.Keytab) *Credentials {
 	c.keytab = kt
 	c.password = ""
 	return c
 }
 
 // Keytab returns the credential's Keytab.
-func (c *Credentials) Keytab() *keytab.Keytab {
+func (c *Credentials) Keytab() keytab.Keytab {
 	return c.keytab
 }
 
 // HasKeytab queries if the Credentials has a keytab defined.
 func (c *Credentials) HasKeytab() bool {
-	if c.keytab != nil && len(c.keytab.Entries) > 0 {
-		return true
-	}
-	return false
+	return c.keytab != nil && c.keytab.IsPopulated()
 }
 
 // WithPassword sets the password in the Credentials struct.
