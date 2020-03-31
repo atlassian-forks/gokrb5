@@ -12,7 +12,7 @@ import (
 func VerifyAPREQ(APReq messages.APReq, s *Settings) (bool, *credentials.Credentials, error) {
 	var creds *credentials.Credentials
 
-	ok, err := APReq.Verify(s.Keytab, s.MaxClockSkew(), s.ClientAddress())
+	ok, err := APReq.Verify(s.Keytab, s.MaxClockSkew(), s.ClientAddress(), s.KeytabPrincipal())
 	if err != nil || !ok {
 		return false, creds, err
 	}
