@@ -10,7 +10,7 @@ import (
 func TestAssumePreauthentication(t *testing.T) {
 	t.Parallel()
 
-	cl := NewClientWithKeytab("username", "REALM", &keytab.Keytab{}, &config.Config{}, AssumePreAuthentication(true))
+	cl := NewClientWithKeytab("username", "REALM", &keytab.KeytabImpl{}, &config.Config{}, AssumePreAuthentication(true))
 	if !cl.settings.assumePreAuthentication {
 		t.Fatal("assumePreAuthentication should be true")
 	}

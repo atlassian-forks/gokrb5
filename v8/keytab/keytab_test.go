@@ -17,21 +17,21 @@ import (
 func TestUnmarshal(t *testing.T) {
 	t.Parallel()
 	b, _ := hex.DecodeString(testdata.KEYTAB_TESTUSER1_TEST_GOKRB5)
-	kt := New()
+	kt := New().(*KeytabImpl)
 	err := kt.Unmarshal(b)
 	if err != nil {
 		t.Fatalf("Error parsing keytab data: %v\n", err)
 	}
 	assert.Equal(t, uint8(2), kt.version, "Keytab version not as expected")
-	assert.Equal(t, uint32(1), kt.Entries[0].KVNO, "KVNO not as expected")
-	assert.Equal(t, uint8(1), kt.Entries[0].KVNO8, "KVNO8 not as expected")
-	assert.Equal(t, time.Unix(1505669592, 0), kt.Entries[0].Timestamp, "Timestamp not as expected")
-	assert.Equal(t, int32(17), kt.Entries[0].Key.KeyType, "Key's EType not as expected")
-	assert.Equal(t, "698c4df8e9f60e7eea5a21bf4526ad25", hex.EncodeToString(kt.Entries[0].Key.KeyValue), "Key material not as expected")
-	assert.Equal(t, int16(1), kt.Entries[0].Principal.NumComponents, "Number of components in principal not as expected")
-	assert.Equal(t, int32(1), kt.Entries[0].Principal.NameType, "Name type of principal not as expected")
-	assert.Equal(t, "TEST.GOKRB5", kt.Entries[0].Principal.Realm, "Realm of principal not as expected")
-	assert.Equal(t, "testuser1", kt.Entries[0].Principal.Components[0], "Component in principal not as expected")
+	assert.Equal(t, uint32(1), kt.entries[0].KVNO, "KVNO not as expected")
+	assert.Equal(t, uint8(1), kt.entries[0].KVNO8, "KVNO8 not as expected")
+	assert.Equal(t, time.Unix(1505669592, 0), kt.entries[0].Timestamp, "Timestamp not as expected")
+	assert.Equal(t, int32(17), kt.entries[0].Key.KeyType, "Key's EType not as expected")
+	assert.Equal(t, "698c4df8e9f60e7eea5a21bf4526ad25", hex.EncodeToString(kt.entries[0].Key.KeyValue), "Key material not as expected")
+	assert.Equal(t, int16(1), kt.entries[0].Principal.NumComponents, "Number of components in principal not as expected")
+	assert.Equal(t, int32(1), kt.entries[0].Principal.NameType, "Name type of principal not as expected")
+	assert.Equal(t, "TEST.GOKRB5", kt.entries[0].Principal.Realm, "Realm of principal not as expected")
+	assert.Equal(t, "testuser1", kt.entries[0].Principal.Components[0], "Component in principal not as expected")
 }
 
 func TestMarshal(t *testing.T) {
@@ -63,13 +63,14 @@ func TestLoad(t *testing.T) {
 	} else if filepath.Base(cwd) == "keytab" {
 		f = "../" + f
 	}
-	kt, err := Load(f)
+	k, err := Load(f)
 	if err != nil {
 		t.Fatalf("could not load keytab: %v", err)
 	}
+	kt := k.(*KeytabImpl)
 	assert.Equal(t, uint8(2), kt.version, "keytab version not as expected")
-	assert.Equal(t, 12, len(kt.Entries), "keytab entry count not as expected: %+v", *kt)
-	for _, e := range kt.Entries {
+	assert.Equal(t, 12, len(kt.entries), "keytab entry count not as expected: %+v", *kt)
+	for _, e := range kt.entries {
 		if e.Principal.Realm != "TEST.GOKRB5" {
 			t.Error("principal realm not as expected")
 		}
@@ -141,7 +142,7 @@ func TestBadKeytabs(t *testing.T) {
 	badPayloads = append(badPayloads, "BQKAAAAA")
 	for _, v := range badPayloads {
 		decodedKt, _ := base64.StdEncoding.DecodeString(v)
-		parsedKt := new(Keytab)
+		parsedKt := new(KeytabImpl)
 		parsedKt.Unmarshal(decodedKt)
 	}
 }
@@ -154,14 +155,14 @@ func TestKeytabEntriesUser(t *testing.T) {
 	if err != nil {
 		t.Errorf("Could not parse b64 ktutil keytab: %s", err)
 	}
-	ktutil := new(Keytab)
+	ktutil := new(KeytabImpl)
 	err = ktutil.Unmarshal(ktutilbytes)
 	if err != nil {
 		t.Fatalf("Could not load ktutil-generated keytab: %s", err)
 	}
 
 	// Generate the same keytab with gokrb5
-	var ts time.Time = ktutil.Entries[0].Timestamp
+	var ts time.Time = ktutil.entries[0].Timestamp
 	var encTypes []int32 = []int32{
 		etypeID.AES256_CTS_HMAC_SHA1_96,
 		etypeID.AES128_CTS_HMAC_SHA1_96,
@@ -192,14 +193,14 @@ func TestKeytabEntriesService(t *testing.T) {
 	if err != nil {
 		t.Errorf("Could not parse b64 ktutil keytab: %s", err)
 	}
-	ktutil := new(Keytab)
+	ktutil := new(KeytabImpl)
 	err = ktutil.Unmarshal(ktutilbytes)
 	if err != nil {
 		t.Errorf("Could not load ktutil-generated keytab: %s", err)
 	}
 
 	// Generate the same keytab with gokrb5
-	var ts time.Time = ktutil.Entries[0].Timestamp
+	var ts time.Time = ktutil.entries[0].Timestamp
 	var encTypes []int32 = []int32{
 		etypeID.AES256_CTS_HMAC_SHA1_96,
 		etypeID.AES128_CTS_HMAC_SHA1_96,

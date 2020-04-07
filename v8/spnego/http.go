@@ -244,7 +244,7 @@ const (
 )
 
 // SPNEGOKRB5Authenticate is a Kerberos SPNEGO authentication HTTP handler wrapper.
-func SPNEGOKRB5Authenticate(inner http.Handler, kt *keytab.Keytab, settings ...func(*service.Settings)) http.Handler {
+func SPNEGOKRB5Authenticate(inner http.Handler, kt keytab.Keytab, settings ...func(*service.Settings)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set up the SPNEGO GSS-API mechanism
 		var spnego *SPNEGO

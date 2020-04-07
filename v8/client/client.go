@@ -46,7 +46,7 @@ func NewWithPassword(username, realm, password string, krb5conf *config.Config, 
 }
 
 // NewWithKeytab creates a new client from a keytab credential.
-func NewWithKeytab(username, realm string, kt *keytab.Keytab, krb5conf *config.Config, settings ...func(*Settings)) *Client {
+func NewWithKeytab(username, realm string, kt keytab.Keytab, krb5conf *config.Config, settings ...func(*Settings)) *Client {
 	creds := credentials.New(username, realm)
 	return &Client{
 		Credentials: creds.WithKeytab(kt),
@@ -249,7 +249,7 @@ func (cl *Client) Diagnostics(w io.Writer) error {
 	var errs []string
 	if cl.Credentials.HasKeytab() {
 		var loginRealmEncTypes []int32
-		for _, e := range cl.Credentials.Keytab().Entries {
+		for _, e := range cl.Credentials.Keytab().Entries() {
 			if e.Principal.Realm == cl.Credentials.Realm() {
 				loginRealmEncTypes = append(loginRealmEncTypes, e.Key.KeyType)
 			}

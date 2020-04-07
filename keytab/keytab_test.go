@@ -140,7 +140,7 @@ func TestBadKeytabs(t *testing.T) {
 	badPayloads = append(badPayloads, "BQKAAAAA")
 	for _, v := range badPayloads {
 		decodedKt, _ := base64.StdEncoding.DecodeString(v)
-		parsedKt := new(Keytab)
+		parsedKt := new(KeytabImpl)
 		parsedKt.Unmarshal(decodedKt)
 	}
 }

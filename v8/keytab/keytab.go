@@ -21,14 +21,25 @@ const (
 	keytabFirstByte byte = 05
 )
 
-// Keytab struct.
-type Keytab struct {
-	version uint8
-	Entries []entry
+type Keytab interface {
+	GetEncryptionKey(princName types.PrincipalName, realm string, kvno int, etype int32) (types.EncryptionKey, int, error)
+	Marshal() ([]byte, error)
+	Write(w io.Writer) (int, error)
+	Unmarshal(b []byte) error
+	AddEntry(principalName, realm, password string, ts time.Time, KVNO uint8, encType int32) error
+	Entries() []Entry
+	String() string
+	JSON() (string, error)
 }
 
-// Keytab entry struct.
-type entry struct {
+// KeytabImpl struct.
+type KeytabImpl struct {
+	version uint8
+	entries []Entry
+}
+
+// Keytab Entry struct.
+type Entry struct {
 	Principal principal
 	Timestamp time.Time
 	KVNO8     uint8
@@ -36,7 +47,7 @@ type entry struct {
 	KVNO      uint32
 }
 
-func (e entry) String() string {
+func (e Entry) String() string {
 	return fmt.Sprintf("% 4d %s %-56s %2d %-64x",
 		e.KVNO8,
 		e.Timestamp.Format("02/01/06 15:04:05"),
@@ -59,20 +70,20 @@ func (p principal) String() string {
 }
 
 // New creates new, empty Keytab type.
-func New() *Keytab {
-	var e []entry
-	return &Keytab{
+func New() Keytab {
+	var e []Entry
+	return &KeytabImpl{
 		version: 2,
-		Entries: e,
+		entries: e,
 	}
 }
 
 // GetEncryptionKey returns the EncryptionKey from the Keytab for the newest entry with the required kvno, etype and matching principal.
 // If the kvno is zero then the latest kvno will be returned. The kvno is also returned for
-func (kt *Keytab) GetEncryptionKey(princName types.PrincipalName, realm string, kvno int, etype int32) (types.EncryptionKey, int, error) {
+func (kt *KeytabImpl) GetEncryptionKey(princName types.PrincipalName, realm string, kvno int, etype int32) (types.EncryptionKey, int, error) {
 	var key types.EncryptionKey
 	var t time.Time
-	for _, k := range kt.Entries {
+	for _, k := range kt.entries {
 		if k.Principal.Realm == realm && len(k.Principal.Components) == len(princName.NameString) &&
 			k.Key.KeyType == etype &&
 			(k.KVNO == uint32(kvno) || kvno == 0) &&
@@ -98,9 +109,9 @@ func (kt *Keytab) GetEncryptionKey(princName types.PrincipalName, realm string, 
 }
 
 // Create a new Keytab entry.
-func newEntry() entry {
+func newEntry() Entry {
 	var b []byte
-	return entry{
+	return Entry{
 		Principal: newPrincipal(),
 		Timestamp: time.Time{},
 		KVNO8:     0,
@@ -112,19 +123,19 @@ func newEntry() entry {
 	}
 }
 
-func (k Keytab) String() string {
+func (k KeytabImpl) String() string {
 	var s string
 	s = `KVNO Timestamp         Principal                                                ET Key
 ---- ----------------- -------------------------------------------------------- -- ----------------------------------------------------------------
 `
-	for _, entry := range k.Entries {
+	for _, entry := range k.entries {
 		s += entry.String() + "\n"
 	}
 	return s
 }
 
 // AddEntry adds an entry to the keytab. The password should be provided in plain text and it will be converted using the defined enctype to be stored.
-func (k *Keytab) AddEntry(principalName, realm, password string, ts time.Time, KVNO uint8, encType int32) error {
+func (kt *KeytabImpl) AddEntry(principalName, realm, password string, ts time.Time, KVNO uint8, encType int32) error {
 	// Generate a key from the password
 	princ, _ := types.ParseSPNString(principalName)
 	key, _, err := crypto.GetKeyFromPassword(password, princ, realm, encType, types.PADataSequence{})
@@ -135,7 +146,7 @@ func (k *Keytab) AddEntry(principalName, realm, password string, ts time.Time, K
 	// Populate the keytab entry principal
 	ktep := newPrincipal()
 	ktep.NumComponents = int16(len(princ.NameString))
-	if k.version == 1 {
+	if kt.version == 1 {
 		ktep.NumComponents += 1
 	}
 
@@ -151,7 +162,7 @@ func (k *Keytab) AddEntry(principalName, realm, password string, ts time.Time, K
 	e.KVNO = uint32(KVNO)
 	e.Key = key
 
-	k.Entries = append(k.Entries, e)
+	kt.entries = append(kt.entries, e)
 	return nil
 }
 
@@ -167,8 +178,8 @@ func newPrincipal() principal {
 }
 
 // Load a Keytab file into a Keytab type.
-func Load(ktPath string) (*Keytab, error) {
-	kt := new(Keytab)
+func Load(ktPath string) (Keytab, error) {
+	kt := new(KeytabImpl)
 	b, err := ioutil.ReadFile(ktPath)
 	if err != nil {
 		return kt, err
@@ -178,9 +189,9 @@ func Load(ktPath string) (*Keytab, error) {
 }
 
 // Marshal keytab into byte slice
-func (kt *Keytab) Marshal() ([]byte, error) {
+func (kt *KeytabImpl) Marshal() ([]byte, error) {
 	b := []byte{keytabFirstByte, kt.version}
-	for _, e := range kt.Entries {
+	for _, e := range kt.entries {
 		eb, err := e.marshal(int(kt.version))
 		if err != nil {
 			return b, err
@@ -192,7 +203,7 @@ func (kt *Keytab) Marshal() ([]byte, error) {
 
 // Write the keytab bytes to io.Writer.
 // Returns the number of bytes written
-func (kt *Keytab) Write(w io.Writer) (int, error) {
+func (kt *KeytabImpl) Write(w io.Writer) (int, error) {
 	b, err := kt.Marshal()
 	if err != nil {
 		return 0, fmt.Errorf("error marshaling keytab: %v", err)
@@ -201,7 +212,7 @@ func (kt *Keytab) Write(w io.Writer) (int, error) {
 }
 
 // Unmarshal byte slice of Keytab data into Keytab type.
-func (kt *Keytab) Unmarshal(b []byte) error {
+func (kt *KeytabImpl) Unmarshal(b []byte) error {
 	if len(b) < 2 {
 		return fmt.Errorf("byte array is less than 2 bytes: %d", len(b))
 	}
@@ -286,14 +297,14 @@ func (kt *Keytab) Unmarshal(b []byte) error {
 				ke.KVNO = uint32(ke.KVNO8)
 			}
 			// Add the entry to the keytab
-			kt.Entries = append(kt.Entries, ke)
+			kt.entries = append(kt.entries, ke)
 		}
 		// Check if there are still 4 bytes left to read
 		// Also check that n is greater than zero
 		if n < 0 || n > len(b) || len(b[n:]) < 4 {
 			break
 		}
-		// Read the size of the next entry
+		// Read the size of the next Entry
 		l, err = readInt32(b, &n, &endian)
 		if err != nil {
 			return err
@@ -302,7 +313,7 @@ func (kt *Keytab) Unmarshal(b []byte) error {
 	return nil
 }
 
-func (e entry) marshal(v int) ([]byte, error) {
+func (e Entry) marshal(v int) ([]byte, error) {
 	var b []byte
 	pb, err := e.Principal.marshal(v)
 	if err != nil {
@@ -342,7 +353,7 @@ func (e entry) marshal(v int) ([]byte, error) {
 }
 
 // Parse the Keytab bytes of a principal into a Keytab entry's principal.
-func parsePrincipal(b []byte, p *int, kt *Keytab, ke *entry, e *binary.ByteOrder) error {
+func parsePrincipal(b []byte, p *int, kt *KeytabImpl, ke *Entry, e *binary.ByteOrder) error {
 	var err error
 	ke.Principal.NumComponents, err = readInt16(b, p, e)
 	if err != nil {
@@ -520,10 +531,14 @@ func isNativeEndianLittle() bool {
 }
 
 // JSON return information about the keys held in the keytab in a JSON format.
-func (k *Keytab) JSON() (string, error) {
-	b, err := json.MarshalIndent(k, "", "  ")
+func (kt *KeytabImpl) JSON() (string, error) {
+	b, err := json.MarshalIndent(kt, "", "  ")
 	if err != nil {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func (kt *KeytabImpl) Entries() []Entry {
+	return kt.entries
 }
