@@ -7,10 +7,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/atlassian-forks/gokrb5/v8/iana/nametype"
+	"github.com/atlassian-forks/gokrb5/v8/keytab"
+	"github.com/atlassian-forks/gokrb5/v8/types"
 	"github.com/hashicorp/go-uuid"
-	"github.com/jcmturner/gokrb5/v8/iana/nametype"
-	"github.com/jcmturner/gokrb5/v8/keytab"
-	"github.com/jcmturner/gokrb5/v8/types"
 )
 
 const (

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jcmturner/gokrb5/v8/iana/etypeID"
-	"github.com/jcmturner/gokrb5/v8/test/testdata"
+	"github.com/atlassian-forks/gokrb5/v8/iana/etypeID"
+	"github.com/atlassian-forks/gokrb5/v8/test/testdata"
 	"github.com/stretchr/testify/assert"
 )
 
