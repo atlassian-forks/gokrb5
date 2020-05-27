@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/atlassian-forks/gokrb5/v8/asn1tools"
+	"github.com/atlassian-forks/gokrb5/v8/crypto"
+	"github.com/atlassian-forks/gokrb5/v8/iana"
+	"github.com/atlassian-forks/gokrb5/v8/iana/asnAppTag"
+	"github.com/atlassian-forks/gokrb5/v8/iana/errorcode"
+	"github.com/atlassian-forks/gokrb5/v8/iana/keyusage"
+	"github.com/atlassian-forks/gokrb5/v8/iana/msgtype"
+	"github.com/atlassian-forks/gokrb5/v8/keytab"
+	"github.com/atlassian-forks/gokrb5/v8/krberror"
+	"github.com/atlassian-forks/gokrb5/v8/types"
 	"github.com/jcmturner/gofork/encoding/asn1"
-	"github.com/jcmturner/gokrb5/v8/asn1tools"
-	"github.com/jcmturner/gokrb5/v8/crypto"
-	"github.com/jcmturner/gokrb5/v8/iana"
-	"github.com/jcmturner/gokrb5/v8/iana/asnAppTag"
-	"github.com/jcmturner/gokrb5/v8/iana/errorcode"
-	"github.com/jcmturner/gokrb5/v8/iana/keyusage"
-	"github.com/jcmturner/gokrb5/v8/iana/msgtype"
-	"github.com/jcmturner/gokrb5/v8/keytab"
-	"github.com/jcmturner/gokrb5/v8/krberror"
-	"github.com/jcmturner/gokrb5/v8/types"
 )
 
 type marshalAPReq struct {
