@@ -83,6 +83,7 @@ func New() Keytab {
 func (kt *KeytabImpl) GetEncryptionKey(princName types.PrincipalName, realm string, kvno int, etype int32) (types.EncryptionKey, int, error) {
 	var key types.EncryptionKey
 	var t time.Time
+	var kv int
 	for _, k := range kt.entries {
 		if k.Principal.Realm == realm && len(k.Principal.Components) == len(princName.NameString) &&
 			k.Key.KeyType == etype &&
@@ -97,7 +98,7 @@ func (kt *KeytabImpl) GetEncryptionKey(princName types.PrincipalName, realm stri
 			}
 			if p {
 				key = k.Key
-				kvno = int(k.KVNO)
+				kv = int(k.KVNO)
 				t = k.Timestamp
 			}
 		}
@@ -105,7 +106,7 @@ func (kt *KeytabImpl) GetEncryptionKey(princName types.PrincipalName, realm stri
 	if len(key.KeyValue) < 1 {
 		return key, 0, fmt.Errorf("matching key not found in keytab. Looking for %v realm: %v kvno: %v etype: %v", princName.NameString, realm, kvno, etype)
 	}
-	return key, kvno, nil
+	return key, kv, nil
 }
 
 // Create a new Keytab entry.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/atlassian-forks/gokrb5/v8/asn1tools"
 	"github.com/atlassian-forks/gokrb5/v8/iana"
 	"github.com/atlassian-forks/gokrb5/v8/iana/asnAppTag"
 	"github.com/atlassian-forks/gokrb5/v8/iana/errorcode"
@@ -57,6 +58,16 @@ func (k *KRBError) Unmarshal(b []byte) error {
 		return krberror.NewErrorf(krberror.KRBMsgError, "message ID does not indicate a KRB_ERROR. Expected: %v; Actual: %v", expectedMsgType, k.MsgType)
 	}
 	return nil
+}
+
+// Marshal a KRBError into bytes.
+func (k *KRBError) Marshal() ([]byte, error) {
+	b, err := asn1.Marshal(*k)
+	if err != nil {
+		return b, krberror.Errorf(err, krberror.EncodingError, "error marshaling KRBError")
+	}
+	b = asn1tools.AddASNAppTag(b, asnAppTag.KRBError)
+	return b, nil
 }
 
 // Error method implementing error interface on KRBError struct.
