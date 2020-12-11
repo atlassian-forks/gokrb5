@@ -80,6 +80,16 @@ type jsonSession struct {
 	SessionKeyExpiration time.Time
 }
 
+type publicSession struct {
+	Realm                string
+	AuthTime             time.Time
+	EndTime              time.Time
+	RenewTill            time.Time
+	TGT                  messages.Ticket
+	SessionKey           types.EncryptionKey
+	SessionKeyExpiration time.Time
+}
+
 // AddSession adds a session for a realm with a TGT to the client's session cache.
 // A goroutine is started to automatically renew the TGT before expiry.
 func (cl *Client) addSession(tgt messages.Ticket, dep messages.EncKDCRepPart) {
@@ -292,4 +302,53 @@ func (cl *Client) sessionTimes(realm string) (authTime, endTime, renewTime, sess
 // spnRealm resolves the realm name of a service principal name
 func (cl *Client) spnRealm(spn types.PrincipalName) string {
 	return cl.Config.ResolveRealm(spn.NameString[len(spn.NameString)-1])
+}
+
+func (cl *Client) getSessionFromRemoteRealm(realm string) (*session, error) {
+	cl.sessions.mux.RLock()
+	sess, ok := cl.sessions.Entries[cl.Credentials.Realm()]
+	cl.sessions.mux.RUnlock()
+	if !ok {
+		return nil, fmt.Errorf("client does not have a session for realm %s, login first", cl.Credentials.Realm())
+	}
+
+	spn := types.PrincipalName{
+		NameType:   nametype.KRB_NT_SRV_INST,
+		NameString: []string{"krbtgt", realm},
+	}
+
+	_, tgsRep, err := cl.TGSREQGenerateAndExchange(spn, cl.Credentials.Realm(), sess.tgt, sess.sessionKey, false)
+	if err != nil {
+		return nil, err
+	}
+	cl.addSession(tgsRep.Ticket, tgsRep.DecryptedEncPart)
+
+	cl.sessions.mux.RLock()
+	defer cl.sessions.mux.RUnlock()
+	return cl.sessions.Entries[realm], nil
+}
+
+// GetSessionFromRealm returns the session for the realm provided.
+func (cl *Client) GetSessionFromRealm(realm string) (sess *publicSession, err error) {
+	cl.sessions.mux.RLock()
+	s, ok := cl.sessions.Entries[realm]
+	cl.sessions.mux.RUnlock()
+	if !ok {
+		// Try to request TGT from trusted remote Realm
+		s, err = cl.getSessionFromRemoteRealm(realm)
+		if err != nil {
+			return
+		}
+	}
+	// Create another session to return to prevent race condition.
+	sess = &publicSession{
+		Realm:                s.realm,
+		AuthTime:             s.authTime,
+		EndTime:              s.endTime,
+		RenewTill:            s.renewTill,
+		TGT:                  s.tgt,
+		SessionKey:           s.sessionKey,
+		SessionKeyExpiration: s.sessionKeyExpiration,
+	}
+	return
 }
